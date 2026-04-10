@@ -1,0 +1,23 @@
+{
+  "name": "hinata-infra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cdk": "cdk",
+    "cdk:bootstrap": "cdk bootstrap",
+    "cdk:synth": "cdk synth",
+    "cdk:deploy": "cdk deploy --require-approval never"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.917.0",
+    "@aws-sdk/lib-dynamodb": "^3.917.0",
+    "aws-cdk-lib": "^2.243.0",
+    "constructs": "^10.4.2",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.1029.1",
+    "esbuild": "^0.25.11"
+  }
+}

@@ -6,12 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "infra:install": "npm --prefix infra install",
+    "infra:synth": "npm --prefix infra run cdk:synth",
+    "infra:deploy": "npm --prefix infra run cdk:deploy"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
+    "idb": "^8.0.3",
     "next": "16.2.3",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

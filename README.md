@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# hinata
 
-## Getting Started
+あたたかい雰囲気で一日を残せる、ローカル保存中心の日記アプリです。
 
-First, run the development server:
+## App
+
+開発サーバー:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+検証:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint
+npx next build --webpack
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Infra
 
-## Learn More
+`infra/` には Web Push 用の AWS CDK 構成が入っています。今の構成は次の前提です。
 
-To learn more about Next.js, take a look at the following resources:
+- 日記本文はブラウザ保存
+- 通知購読情報だけを `DynamoDB` に保存
+- 購読登録APIは `Lambda Function URL`
+- 定時送信は `EventBridge` から `Lambda`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 作成されるもの
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `hinata-push-subscriptions` DynamoDB テーブル
+- 購読登録用 Lambda
+- 定時送信用 Lambda
+- 5分おき実行の EventBridge ルール
 
-## Deploy on Vercel
+### 初回セットアップ
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run infra:install
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### デプロイ
+
+```bash
+cd infra
+npx cdk bootstrap
+npx cdk deploy --require-approval never \
+  -c siteOrigin=https://hinata.at-himawari.com \
+  -c localOrigin=http://localhost:3000 \
+  -c defaultTimezone=Asia/Tokyo \
+  -c vapidPublicKey=YOUR_VAPID_PUBLIC_KEY \
+  -c vapidPrivateKey=YOUR_VAPID_PRIVATE_KEY \
+  -c vapidSubject=mailto:notifications@at-himawari.com
+```
+
+### ルートから一発でデプロイ
+
+```bash
+npm run infra:deploy -- \
+  -c siteOrigin=https://hinata.at-himawari.com \
+  -c localOrigin=http://localhost:3000 \
+  -c defaultTimezone=Asia/Tokyo \
+  -c vapidPublicKey=YOUR_VAPID_PUBLIC_KEY \
+  -c vapidPrivateKey=YOUR_VAPID_PRIVATE_KEY \
+  -c vapidSubject=mailto:notifications@at-himawari.com
+```
+
+### メモ
+
+- 現状の通知スロット判定は `Asia/Tokyo` 前提で始めやすい構成です
+- VAPID キー未設定でもデプロイはできますが、送信Lambdaはスキップ動作になります
+- PWA と Push Subscription のフロント実装はこれから接続する前提です
