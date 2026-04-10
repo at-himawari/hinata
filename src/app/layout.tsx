@@ -45,6 +45,11 @@ export default function RootLayout({
       <body className="min-h-full">
         <NotificationScheduler />
         {children}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6651283997191475"
+          crossOrigin="anonymous"
+        ></script>
       </body>
     </html>
   );
