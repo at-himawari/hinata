@@ -3,12 +3,8 @@
 import { useSyncExternalStore } from "react";
 
 const DISMISS_KEY = "hinata:install-hint-dismissed";
-const hiddenState: InstallHintState = { visible: false, message: "" };
 
-type InstallHintState = {
-  visible: boolean;
-  message: string;
-};
+type InstallHintKind = "hidden" | "ios" | "android";
 
 function isIos(userAgent: string) {
   return /iPhone|iPad|iPod/i.test(userAgent);
@@ -27,34 +23,26 @@ function isStandalone() {
   );
 }
 
-function getSnapshot(): InstallHintState {
+function getSnapshot(): InstallHintKind {
   if (typeof window === "undefined") {
-    return hiddenState;
+    return "hidden";
   }
 
   if (window.localStorage.getItem(DISMISS_KEY) === "1" || isStandalone()) {
-    return hiddenState;
+    return "hidden";
   }
 
   const userAgent = window.navigator.userAgent;
 
   if (isIos(userAgent)) {
-    return {
-      visible: true,
-      message:
-        "iPhoneでは、Safariの共有メニューから「ホーム画面に追加」すると通知を使えるようになります。",
-    };
+    return "ios";
   }
 
   if (/Android/i.test(userAgent)) {
-    return {
-      visible: true,
-      message:
-        "ブラウザメニューから「ホーム画面に追加」しておくと、通知や起動が使いやすくなります。",
-    };
+    return "android";
   }
 
-  return hiddenState;
+  return "hidden";
 }
 
 function subscribe(callback: () => void) {
@@ -74,11 +62,23 @@ function subscribe(callback: () => void) {
   };
 }
 
+function getMessage(kind: InstallHintKind) {
+  if (kind === "ios") {
+    return "iPhoneでは、Safariの共有メニューから「ホーム画面に追加」すると通知を使えるようになります。";
+  }
+
+  if (kind === "android") {
+    return "ブラウザメニューから「ホーム画面に追加」しておくと、通知や起動が使いやすくなります。";
+  }
+
+  return "";
+}
+
 export function InstallHint() {
-  const state = useSyncExternalStore(
+  const kind = useSyncExternalStore<InstallHintKind>(
     subscribe,
     getSnapshot,
-    () => hiddenState,
+    () => "hidden",
   );
 
   function handleDismiss() {
@@ -86,7 +86,7 @@ export function InstallHint() {
     window.dispatchEvent(new Event("storage"));
   }
 
-  if (!state.visible) {
+  if (kind === "hidden") {
     return null;
   }
 
@@ -98,7 +98,7 @@ export function InstallHint() {
             ホーム画面に追加すると、もっと使いやすくなります
           </p>
           <p className="mt-1 text-sm leading-7 text-[var(--color-soft-text)]">
-            {state.message}
+            {getMessage(kind)}
           </p>
         </div>
         <button
