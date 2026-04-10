@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/hinata-favicon.svg",
     shortcut: "/hinata-favicon.svg",
-    apple: "/apple-icon",
+    apple: "/apple-touch-icon.png",
   },
   openGraph: {
     title: "hinata",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/opengraph-image",
+        url: "/ogp.png",
         width: 1200,
         height: 630,
         alt: "hinata の OGP 画像",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "hinata",
     description: "あたたかい気分で日々を残す、ローカル保存の日記アプリ",
-    images: ["/twitter-image"],
+    images: ["/twitter-card.png"],
   },
 };
 

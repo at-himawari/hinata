@@ -1,0 +1,33 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1012" cy="94" r="182" fill="#FFD98D" fill-opacity="0.34"/>
+  <rect x="72" y="58" width="1056" height="514" rx="40" fill="#FFFDF8" fill-opacity="0.72" stroke="#F1D7AE" stroke-width="2"/>
+  <text x="92" y="110" fill="#8F725B" font-family="Arial, Helvetica, sans-serif" font-size="22" letter-spacing="0.36em">WARM DIARY</text>
+  <text x="92" y="220" fill="#4B382D" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="700">hinata</text>
+  <text x="92" y="318" fill="#725A4A" font-family="Arial, Helvetica, sans-serif" font-size="34">A warm, local-first</text>
+  <text x="92" y="372" fill="#725A4A" font-family="Arial, Helvetica, sans-serif" font-size="34">diary for everyday moments</text>
+
+  <rect x="838" y="170" width="290" height="290" rx="56" fill="url(#panel)" stroke="#F2D6AB" stroke-width="2"/>
+  <circle cx="983" cy="234" r="46" fill="url(#sun)"/>
+  <path d="M983 160V132" stroke="#E2A647" stroke-width="10" stroke-linecap="round"/>
+  <path d="M918 186L892 168" stroke="#E2A647" stroke-width="10" stroke-linecap="round"/>
+  <path d="M1048 186L1074 168" stroke="#E2A647" stroke-width="10" stroke-linecap="round"/>
+  <path d="M884 388C910 337 952 310 1000 310C1048 310 1091 338 1126 388" stroke="#D58D3A" stroke-width="18" stroke-linecap="round"/>
+  <path d="M906 388C931 352 963 334 998 334C1033 334 1065 352 1103 388" stroke="#F6C979" stroke-width="16" stroke-linecap="round"/>
+
+  <defs>
+    <linearGradient id="bg" x1="600" y1="0" x2="600" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDF8"/>
+      <stop offset="0.48" stop-color="#FFF6E8"/>
+      <stop offset="1" stop-color="#FFEDD4"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="983" y1="170" x2="983" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFAF2"/>
+      <stop offset="1" stop-color="#FFE9C8"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="983" y1="188" x2="983" y2="280" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE49A"/>
+      <stop offset="1" stop-color="#F1B95E"/>
+    </linearGradient>
+  </defs>
+</svg>
