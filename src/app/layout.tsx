@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "hinata",
     description: "あたたかい気分で日々を残す、ローカル保存の日記アプリ",
-    images: ["https://hinata.at-himawari.com/twitter-card.png"],
+    images: ["https://hinata.at-himawari.com/twitter-card.png?v=1"],
   },
 };
 
