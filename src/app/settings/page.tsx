@@ -68,8 +68,37 @@ export default function SettingsPage() {
   }
 
   async function handlePermissionRequest() {
+    if (settings.notificationEnabled) {
+      await updateSettings({
+        ...settings,
+        notificationEnabled: false,
+      });
+      setSavedText("通知をオフにしました");
+      return;
+    }
+
+    if (permission === "granted") {
+      await updateSettings({
+        ...settings,
+        notificationEnabled: true,
+      });
+      setSavedText("通知をオンにしました");
+      return;
+    }
+
     const result = await requestNotificationPermission();
     setPermission(result);
+
+    if (result === "granted") {
+      await updateSettings({
+        ...settings,
+        notificationEnabled: true,
+      });
+      setSavedText("通知をオンにしました");
+      return;
+    }
+
+    setSavedText("通知の許可が必要です");
   }
 
   function updateNotificationPart(part: "hours" | "minutes", value: string) {
@@ -175,7 +204,7 @@ export default function SettingsPage() {
                 onClick={() => void handlePermissionRequest()}
                 className="mt-3 rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
               >
-                通知を許可する
+                {settings.notificationEnabled ? "通知をオフにする" : "通知を許可する"}
               </button>
             </div>
           </div>

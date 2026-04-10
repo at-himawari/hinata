@@ -10,7 +10,8 @@ import { MoodBadge } from "@/components/shared/mood-badge";
 import { Panel } from "@/components/shared/panel";
 import { listDiaryEntries } from "@/lib/db/entries";
 import { getDraftByDate } from "@/lib/db/drafts";
-import { getSettings } from "@/lib/db/settings";
+import { getSettings, SETTINGS_UPDATED_EVENT } from "@/lib/db/settings";
+import { getNotificationPermission } from "@/lib/notifications";
 import { formatEntryPreview, getTodayKey } from "@/lib/utils";
 import type { AppSettings, DiaryEntry } from "@/types/diary";
 
@@ -18,6 +19,9 @@ export default function HomePage() {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [todayDraft, setTodayDraft] = useState(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState<
+    NotificationPermission | "unsupported"
+  >("default");
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -37,13 +41,25 @@ export default function HomePage() {
       setEntries(entryList);
       setTodayDraft(Boolean(draft?.body.trim() || draft?.mood));
       setSettings(appSettings);
+      setNotificationPermission(getNotificationPermission());
       setIsLoaded(true);
     }
 
     void load();
 
+    const handleRefresh = () => {
+      void load();
+    };
+
+    window.addEventListener(SETTINGS_UPDATED_EVENT, handleRefresh);
+    window.addEventListener("focus", handleRefresh);
+    document.addEventListener("visibilitychange", handleRefresh);
+
     return () => {
       cancelled = true;
+      window.removeEventListener(SETTINGS_UPDATED_EVENT, handleRefresh);
+      window.removeEventListener("focus", handleRefresh);
+      document.removeEventListener("visibilitychange", handleRefresh);
     };
   }, []);
 
@@ -166,10 +182,13 @@ export default function HomePage() {
               </h3>
               <p className="mt-2 text-sm leading-7 text-[var(--color-soft-text)]">
                 {isLoaded && settings ? (
-                  settings.notificationEnabled ? (
+                  settings.notificationEnabled &&
+                  notificationPermission === "granted" ? (
                     <>
                       毎日 {settings.notificationTime} に、そっと書く時間をお知らせします。
                     </>
+                  ) : notificationPermission === "unsupported" ? (
+                    <>この端末の今の開き方では通知を使えません。設定から条件を確認できます。</>
                   ) : (
                     <>通知は今はオフです。必要になったら設定から選べます。</>
                   )

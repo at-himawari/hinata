@@ -2,6 +2,7 @@ import { getDB } from "@/lib/db/index";
 import type { AppSettings } from "@/types/diary";
 
 const SETTINGS_KEY = "app";
+export const SETTINGS_UPDATED_EVENT = "hinata:settings-updated";
 
 const defaultSettings: AppSettings = {
   notificationEnabled: false,
@@ -49,5 +50,10 @@ export async function saveSettings(settings: AppSettings) {
   };
 
   await db.put("settings", normalizedSettings, SETTINGS_KEY);
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(SETTINGS_UPDATED_EVENT));
+  }
+
   return normalizedSettings;
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BottomNav } from "@/components/shared/bottom-nav";
+import { InstallHint } from "@/components/shared/install-hint";
 
 type AppShellProps = {
   title: string;
@@ -32,6 +33,7 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
           </Link>
         </header>
 
+        <InstallHint />
         <main className="flex-1">{children}</main>
         <footer className="mt-8 pb-4 text-center text-xs leading-6 text-[var(--color-soft-text)]">
           日記データは、ブラウザに保存されるため誰にも公開されません。
