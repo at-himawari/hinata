@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { NotificationScheduler } from "@/components/shared/notification-scheduler";
+import { ServiceWorkerRegistration } from "@/components/shared/service-worker-registration";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "hinata",
   description: "あたたかい気分で日々を残す、ローカル保存の日記アプリ",
   metadataBase: new URL("https://hinata.at-himawari.com"),
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/hinata-favicon.svg",
     shortcut: "/hinata-favicon.svg",
@@ -43,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-full antialiased">
       <body className="min-h-full">
-        <NotificationScheduler />
+        <ServiceWorkerRegistration />
         {children}
         <script
           async

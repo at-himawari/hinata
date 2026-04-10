@@ -11,9 +11,8 @@ import {
   HttpMethod,
   FunctionUrlAuthType,
   Runtime,
-  Code,
-  Function as LambdaFunction,
 } from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction, OutputFormat } from "aws-cdk-lib/aws-lambda-nodejs";
 import { CfnSchedule } from "aws-cdk-lib/aws-scheduler";
 import {
   PolicyStatement,
@@ -25,6 +24,7 @@ import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const lambdaRoot = path.join(__dirname, "../lambda");
+const infraRoot = path.join(__dirname, "..");
 
 export class HinataNotificationStack extends cdk.Stack {
   constructor(scope, id, props = {}) {
@@ -56,12 +56,16 @@ export class HinataNotificationStack extends cdk.Stack {
       retention: RetentionDays.ONE_WEEK,
     });
 
-    const registerSubscriptionFn = new LambdaFunction(this, "RegisterSubscriptionFn", {
+    const registerSubscriptionFn = new NodejsFunction(this, "RegisterSubscriptionFn", {
       runtime: Runtime.NODEJS_20_X,
-      handler: "register-subscription.handler",
-      code: Code.fromAsset(lambdaRoot),
+      entry: path.join(lambdaRoot, "register-subscription.mjs"),
+      handler: "handler",
       timeout: cdk.Duration.seconds(10),
       logGroup: registerSubscriptionLogGroup,
+      bundling: {
+        format: OutputFormat.CJS,
+      },
+      depsLockFilePath: path.join(infraRoot, "package-lock.json"),
       environment: {
         TABLE_NAME: subscriptionsTable.tableName,
         DEFAULT_TIMEZONE: defaultTimezone,
@@ -84,12 +88,16 @@ export class HinataNotificationStack extends cdk.Stack {
       retention: RetentionDays.ONE_WEEK,
     });
 
-    const sendDueNotificationsFn = new LambdaFunction(this, "SendDueNotificationsFn", {
+    const sendDueNotificationsFn = new NodejsFunction(this, "SendDueNotificationsFn", {
       runtime: Runtime.NODEJS_20_X,
-      handler: "send-due-notifications.handler",
-      code: Code.fromAsset(lambdaRoot),
+      entry: path.join(lambdaRoot, "send-due-notifications.mjs"),
+      handler: "handler",
       timeout: cdk.Duration.seconds(30),
       logGroup: sendDueNotificationsLogGroup,
+      bundling: {
+        format: OutputFormat.CJS,
+      },
+      depsLockFilePath: path.join(infraRoot, "package-lock.json"),
       environment: {
         TABLE_NAME: subscriptionsTable.tableName,
         SLOT_INDEX_NAME: "byNotificationSlot",

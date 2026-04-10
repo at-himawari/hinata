@@ -1,0 +1,23 @@
+{
+  "name": "hinata",
+  "short_name": "hinata",
+  "description": "あたたかい気分で日々を残す、ローカル保存の日記アプリ",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fff9f1",
+  "theme_color": "#f3c878",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

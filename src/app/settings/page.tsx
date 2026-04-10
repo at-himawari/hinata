@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shared/app-shell";
 import { Panel } from "@/components/shared/panel";
-import { getNotificationPermission, requestNotificationPermission } from "@/lib/notifications";
+import {
+  disablePushSubscription,
+  getNotificationPermission,
+  getPushSupportStatus,
+  requestNotificationPermission,
+  syncPushSubscription,
+} from "@/lib/notifications";
 import { getSettings, saveSettings } from "@/lib/db/settings";
 import type { AppSettings } from "@/types/diary";
 
@@ -15,21 +21,6 @@ const notificationMinutes = Array.from({ length: 12 }, (_, index) =>
   String(index * 5).padStart(2, "0"),
 );
 
-function formatPermission(permission: NotificationPermission | "unsupported") {
-  switch (permission) {
-    case "granted":
-      return "許可済み";
-    case "denied":
-      return "拒否されています";
-    case "default":
-      return "まだ選択していません";
-    case "unsupported":
-      return "このブラウザでは通知に対応していません";
-    default:
-      return permission;
-  }
-}
-
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>({
     notificationEnabled: false,
@@ -37,6 +28,11 @@ export default function SettingsPage() {
   });
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
   const [savedText, setSavedText] = useState("読み込み中です");
+  const [isIosDevice, setIsIosDevice] = useState(false);
+  const [isStandaloneMode, setIsStandaloneMode] = useState(false);
+  const [isPushSupported, setIsPushSupported] = useState(false);
+  const [supportMessage, setSupportMessage] = useState("");
+  const [isSubmittingNotification, setIsSubmittingNotification] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,6 +40,7 @@ export default function SettingsPage() {
     async function load() {
       const appSettings = await getSettings();
       const notificationPermission = getNotificationPermission();
+      const support = getPushSupportStatus();
 
       if (cancelled) {
         return;
@@ -51,7 +48,25 @@ export default function SettingsPage() {
 
       setSettings(appSettings);
       setPermission(notificationPermission);
+      setIsPushSupported(support.supported);
+      setSupportMessage(support.message);
+      setIsIosDevice(/iPhone|iPad|iPod/i.test(window.navigator.userAgent));
+      setIsStandaloneMode(
+        window.matchMedia?.("(display-mode: standalone)")?.matches ||
+          // Safari on iOS exposes this property in standalone mode.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (window.navigator as any).standalone === true,
+      );
       setSavedText("設定は自動で保存されます");
+
+      if (notificationPermission === "granted" && appSettings.notificationEnabled) {
+        void syncPushSubscription({
+          notificationTime: appSettings.notificationTime,
+          enabled: true,
+        }).catch(() => {
+          // The UI already exposes the current support state.
+        });
+      }
     }
 
     void load();
@@ -67,49 +82,91 @@ export default function SettingsPage() {
     setSavedText("設定を保存しました");
   }
 
-  async function handlePermissionRequest() {
-    if (settings.notificationEnabled) {
-      await updateSettings({
-        ...settings,
-        notificationEnabled: false,
-      });
+  async function handleNotificationEnabledChange(enabled: boolean) {
+    const nextSettings = {
+      ...settings,
+      notificationEnabled: enabled,
+    };
+
+    setIsSubmittingNotification(true);
+
+    if (enabled) {
+      const support = getPushSupportStatus();
+
+      if (!support.supported) {
+        setSavedText(support.message);
+        setIsSubmittingNotification(false);
+        return;
+      }
+
+      let nextPermission = permission;
+
+      if (nextPermission !== "granted") {
+        nextPermission = await requestNotificationPermission();
+        setPermission(nextPermission);
+
+        if (nextPermission !== "granted") {
+          setSavedText("通知の許可が必要です");
+          setIsSubmittingNotification(false);
+          return;
+        }
+      }
+
+      try {
+        await syncPushSubscription({
+          notificationTime: settings.notificationTime,
+          enabled: true,
+        });
+        await updateSettings(nextSettings);
+        setSavedText("通知をオンにしました");
+      } catch (error) {
+        setSavedText(
+          error instanceof Error ? error.message : "通知の設定に失敗しました",
+        );
+      } finally {
+        setIsSubmittingNotification(false);
+      }
+
+      return;
+    }
+
+    try {
+      await disablePushSubscription();
+      await updateSettings(nextSettings);
       setSavedText("通知をオフにしました");
-      return;
+    } catch (error) {
+      setSavedText(
+        error instanceof Error ? error.message : "通知の解除に失敗しました",
+      );
+    } finally {
+      setIsSubmittingNotification(false);
     }
-
-    if (permission === "granted") {
-      await updateSettings({
-        ...settings,
-        notificationEnabled: true,
-      });
-      setSavedText("通知をオンにしました");
-      return;
-    }
-
-    const result = await requestNotificationPermission();
-    setPermission(result);
-
-    if (result === "granted") {
-      await updateSettings({
-        ...settings,
-        notificationEnabled: true,
-      });
-      setSavedText("通知をオンにしました");
-      return;
-    }
-
-    setSavedText("通知の許可が必要です");
   }
 
-  function updateNotificationPart(part: "hours" | "minutes", value: string) {
+  async function updateNotificationPart(part: "hours" | "minutes", value: string) {
     const [currentHours, currentMinutes] = settings.notificationTime.split(":");
     const nextHours = part === "hours" ? value : currentHours;
     const nextMinutes = part === "minutes" ? value : currentMinutes;
-
-    void updateSettings({
+    const nextSettings = {
       ...settings,
       notificationTime: `${nextHours}:${nextMinutes}`,
-    });
+    };
+
+    await updateSettings(nextSettings);
+
+    if (settings.notificationEnabled && permission === "granted") {
+      try {
+        await syncPushSubscription({
+          notificationTime: nextSettings.notificationTime,
+          enabled: true,
+        });
+        setSavedText("通知時刻を更新しました");
+      } catch (error) {
+        setSavedText(
+          error instanceof Error ? error.message : "通知時刻の同期に失敗しました",
+        );
+      }
+    }
   }
 
   return (
@@ -121,29 +178,55 @@ export default function SettingsPage() {
         <Panel>
           <h2 className="text-3xl font-bold text-[var(--color-ink)]">通知</h2>
           <p className="mt-2 text-sm leading-7 text-[var(--color-soft-text)]">
-            ブラウザ通知は、アプリやPWAを開いているときにやさしく届きます。
+            Web Push を使うと、アプリを閉じていてもやさしく届きます。
           </p>
 
+          {!isPushSupported ? (
+            <div className="mt-5 rounded-[24px] border border-[var(--color-accent-deep)] bg-[linear-gradient(135deg,rgba(255,239,205,0.98),rgba(255,249,235,0.98))] p-4">
+              <p className="text-sm font-bold text-[var(--color-ink)]">
+                {isIosDevice && !isStandaloneMode
+                  ? "iPhoneでは、ホーム画面から開かないと通知を使えません"
+                  : "この端末では、通知の前に準備が必要です"}
+              </p>
+              <p className="mt-2 text-sm leading-7 text-[var(--color-soft-text)]">
+                {supportMessage}
+              </p>
+            </div>
+          ) : null}
+
           <div className="mt-6 grid gap-5">
-            <label className="flex items-center justify-between gap-4 rounded-[24px] border border-[var(--color-line)] bg-white/80 p-4">
+            <div className="rounded-[24px] border border-[var(--color-line)] bg-white/80 p-4">
               <div>
                 <p className="font-semibold text-[var(--color-ink)]">通知を受け取る</p>
                 <p className="text-sm text-[var(--color-soft-text)]">
-                  毎日の記録時間をそっと知らせます
+                  ボタンを一度押すと、通知の許可と購読設定をまとめて行います
                 </p>
               </div>
-              <input
-                type="checkbox"
-                checked={settings.notificationEnabled}
-                onChange={(event) =>
-                  void updateSettings({
-                    ...settings,
-                    notificationEnabled: event.target.checked,
-                  })
-                }
-                className="h-5 w-5 accent-[var(--color-accent-deep)]"
-              />
-            </label>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    void handleNotificationEnabledChange(!settings.notificationEnabled)
+                  }
+                  disabled={isSubmittingNotification}
+                  className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5 disabled:opacity-80"
+                >
+                  {isSubmittingNotification ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-ink)] border-t-transparent" />
+                      <span>設定中です...</span>
+                    </>
+                  ) : settings.notificationEnabled ? (
+                    "通知をオフにする"
+                  ) : (
+                    "通知を受け取る"
+                  )}
+                </button>
+                <span className="text-sm text-[var(--color-soft-text)]">
+                  {settings.notificationEnabled ? "現在オンです" : "現在オフです"}
+                </span>
+              </div>
+            </div>
 
             <label className="rounded-[24px] border border-[var(--color-line)] bg-white/80 p-4">
               <p className="font-semibold text-[var(--color-ink)]">通知時刻</p>
@@ -155,8 +238,9 @@ export default function SettingsPage() {
                   <select
                     value={settings.notificationTime.split(":")[0]}
                     onChange={(event) =>
-                      updateNotificationPart("hours", event.target.value)
+                      void updateNotificationPart("hours", event.target.value)
                     }
+                    disabled={isSubmittingNotification}
                     className="rounded-full border border-[var(--color-line)] bg-[var(--color-panel-alt)] px-4 py-2 text-[var(--color-ink)] outline-none"
                   >
                     {notificationHours.map((hour) => (
@@ -174,8 +258,9 @@ export default function SettingsPage() {
                   <select
                     value={settings.notificationTime.split(":")[1]}
                     onChange={(event) =>
-                      updateNotificationPart("minutes", event.target.value)
+                      void updateNotificationPart("minutes", event.target.value)
                     }
+                    disabled={isSubmittingNotification}
                     className="rounded-full border border-[var(--color-line)] bg-[var(--color-panel-alt)] px-4 py-2 text-[var(--color-ink)] outline-none"
                   >
                     {notificationMinutes.map((minute) => (
@@ -193,20 +278,6 @@ export default function SettingsPage() {
                 5分刻みで選べます
               </p>
             </label>
-
-            <div className="rounded-[24px] border border-[var(--color-line)] bg-white/80 p-4">
-              <p className="font-semibold text-[var(--color-ink)]">通知の許可</p>
-              <p className="mt-1 text-sm text-[var(--color-soft-text)]">
-                現在の状態: {formatPermission(permission)}
-              </p>
-              <button
-                type="button"
-                onClick={() => void handlePermissionRequest()}
-                className="mt-3 rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
-              >
-                {settings.notificationEnabled ? "通知をオフにする" : "通知を許可する"}
-              </button>
-            </div>
           </div>
 
           <p className="mt-4 text-sm text-[var(--color-soft-text)]">{savedText}</p>

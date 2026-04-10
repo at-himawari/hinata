@@ -11,7 +11,7 @@ import { Panel } from "@/components/shared/panel";
 import { listDiaryEntries } from "@/lib/db/entries";
 import { getDraftByDate } from "@/lib/db/drafts";
 import { getSettings, SETTINGS_UPDATED_EVENT } from "@/lib/db/settings";
-import { getNotificationPermission } from "@/lib/notifications";
+import { getNotificationPermission, getPushSupportStatus } from "@/lib/notifications";
 import { formatEntryPreview, getTodayKey } from "@/lib/utils";
 import type { AppSettings, DiaryEntry } from "@/types/diary";
 
@@ -22,6 +22,7 @@ export default function HomePage() {
   const [notificationPermission, setNotificationPermission] = useState<
     NotificationPermission | "unsupported"
   >("default");
+  const [pushSupportMessage, setPushSupportMessage] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function HomePage() {
       setTodayDraft(Boolean(draft?.body.trim() || draft?.mood));
       setSettings(appSettings);
       setNotificationPermission(getNotificationPermission());
+      setPushSupportMessage(getPushSupportStatus().message);
       setIsLoaded(true);
     }
 
@@ -188,7 +190,7 @@ export default function HomePage() {
                       毎日 {settings.notificationTime} に、そっと書く時間をお知らせします。
                     </>
                   ) : notificationPermission === "unsupported" ? (
-                    <>この端末の今の開き方では通知を使えません。設定から条件を確認できます。</>
+                    <>{pushSupportMessage}</>
                   ) : (
                     <>通知は今はオフです。必要になったら設定から選べます。</>
                   )
