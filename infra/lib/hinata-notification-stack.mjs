@@ -57,7 +57,7 @@ export class HinataNotificationStack extends cdk.Stack {
     });
 
     const registerSubscriptionFn = new NodejsFunction(this, "RegisterSubscriptionFn", {
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_24_X,
       entry: path.join(lambdaRoot, "register-subscription.mjs"),
       handler: "handler",
       timeout: cdk.Duration.seconds(10),
@@ -89,7 +89,7 @@ export class HinataNotificationStack extends cdk.Stack {
     });
 
     const sendDueNotificationsFn = new NodejsFunction(this, "SendDueNotificationsFn", {
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_24_X,
       entry: path.join(lambdaRoot, "send-due-notifications.mjs"),
       handler: "handler",
       timeout: cdk.Duration.seconds(30),
